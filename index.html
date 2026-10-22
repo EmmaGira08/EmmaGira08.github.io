@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPEED BY CRISPI | Noticias de vehículos en Colombia</title>
+<meta name="description" content="Lanzamientos, pruebas y novedades del mundo automotriz en Colombia. SPEED BY CRISPI.">
+<meta name="theme-color" content="#7a0000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800;900&family=Mr+Dafoe&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#"><b class="glow">SPEED</b><i class="firma glow">by Crispi</i></a>
+    <nav class="nav-links">
+      <a href="#noticias">Noticias</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1 class="glow">SPEED</h1>
+    <!-- Para mostrar tu carro: guarda la imagen sin fondo como "carro.png" en esta misma carpeta -->
+    <img class="car" src="carro.png" alt="" onerror="this.style.display='none'">
+    <div class="by firma glow">by Crispi</div>
+    <p class="lema">Lanzamientos, pruebas y todo lo nuevo del mundo automotriz en Colombia.</p>
+  </div>
+</section>
+
+<main class="wrap" id="noticias">
+  <div class="controles">
+    <div class="chips" id="chips"></div>
+    <input class="buscar" id="buscar" type="search" placeholder="Buscar marca o modelo…">
+  </div>
+  <div id="destacada"></div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer id="contacto">
+  <div class="wrap">
+    <div class="firma glow">Speed by Crispi</div>
+    <div class="redes" id="redes"></div>
+    <small>© <span id="anio"></span> SPEED BY CRISPI · Noticias de vehículos en Colombia</small>
+  </div>
+</footer>
+
+<div class="modal" id="modal">
+  <div class="hoja" id="hoja"></div>
+</div>
+
+<script src="noticias.js"></script>
+<script>
+(function(){
+  var todas = (window.NOTICIAS || []).slice().sort(function(a,b){return b.fecha.localeCompare(a.fecha)});
+  var cfg = window.SPEED_CONFIG || {};
+  var cat = 'Todas', q = '';
+  var $ = function(id){return document.getElementById(id)};
+
+  function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function fecha(f){
+    var p=f.split('-'); if(p.length<3) return f;
+    var m=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return parseInt(p[2],10)+' '+m[parseInt(p[1],10)-1]+' '+p[0];
+  }
+  function foto(n,extra){
+    if(n.imagen) return '<div class="foto" style="background-image:url(\''+esc(n.imagen).replace(/'/g,'%27')+'\')">'+extra+'</div>';
+    return '<div class="foto vacia">'+extra+'<span class="glow">'+esc((n.marca||'S').charAt(0).toUpperCase())+'</span></div>';
+  }
+  function visibles(){
+    var t=q.toLowerCase();
+    return todas.filter(function(n){
+      var okC = cat==='Todas' || n.categoria===cat;
+      var okQ = !t || (n.titulo+' '+n.resumen+' '+n.marca).toLowerCase().indexOf(t)>-1;
+      return okC && okQ;
+    });
+  }
+
+  function pintarChips(){
+    var cats=['Todas'];
+    todas.forEach(function(n){ if(n.categoria && cats.indexOf(n.categoria)<0) cats.push(n.categoria) });
+    $('chips').innerHTML = cats.map(function(c){
+      return '<button class="chip'+(c===cat?' on':'')+'" data-c="'+esc(c)+'">'+esc(c)+'</button>';
+    }).join('');
+  }
+
+  function pintar(){
+    var lista = visibles();
+    var dest = (cat==='Todas' && !q) ? lista.filter(function(n){return n.destacada})[0] : null;
+    var resto = dest ? lista.filter(function(n){return n!==dest}) : lista;
+
+    $('destacada').innerHTML = dest ? (
+      '<article class="destacada" data-id="'+esc(dest.id)+'">'+
+        foto(dest,'')+
+        '<div class="info"><span class="tag">'+esc(dest.categoria)+' · Destacada</span>'+
+        '<h2>'+esc(dest.titulo)+'</h2><p>'+esc(dest.resumen)+'</p>'+
+        '<div class="meta">'+fecha(dest.fecha)+(dest.marca?' · '+esc(dest.marca):'')+'</div></div>'+
+      '</article>') : '';
+
+    $('grid').innerHTML = resto.length ? resto.map(function(n){
+      return '<article class="card" data-id="'+esc(n.id)+'">'+
+        foto(n,'<span class="tag">'+esc(n.categoria)+'</span>')+
+        '<div class="cuerpo"><h3>'+esc(n.titulo)+'</h3><p>'+esc(n.resumen)+'</p>'+
+        '<div class="meta">'+fecha(n.fecha)+(n.marca?' · '+esc(n.marca):'')+'</div></div></article>';
+    }).join('') : (dest ? '' : '<div class="vacio">No encontramos noticias con ese filtro.</div>');
+  }
+
+  function abrir(id){
+    var n = todas.filter(function(x){return x.id===id})[0]; if(!n) return;
+    var parrafos = String(n.contenido||n.resumen).split(/\n\s*\n/).map(function(p){return '<p>'+esc(p).replace(/\n/g,'<br>')+'</p>'}).join('');
+    var url = location.href.split('#')[0];
+    var wa = 'https://wa.me/?text='+encodeURIComponent(n.titulo+' — SPEED BY CRISPI '+url);
+    $('hoja').innerHTML =
+      '<button class="cerrar" aria-label="Cerrar">×</button>'+
+      foto(n,'')+
+      '<div class="txt"><span class="tag" style="position:static;display:inline-block">'+esc(n.categoria)+'</span>'+
+      '<h2>'+esc(n.titulo)+'</h2>'+
+      '<div class="meta" style="margin:0 0 16px">'+fecha(n.fecha)+(n.marca?' · '+esc(n.marca):'')+'</div>'+
+      parrafos+
+      '<div class="acciones"><a class="btn solido" target="_blank" rel="noopener" href="'+wa+'">Compartir por WhatsApp</a>'+
+      (n.fuente?'<a class="btn" target="_blank" rel="noopener" href="'+esc(n.fuente)+'">Ver fuente</a>':'')+'</div></div>';
+    $('modal').classList.add('abierto');
+    document.body.style.overflow='hidden';
+  }
+  function cerrar(){ $('modal').classList.remove('abierto'); document.body.style.overflow=''; }
+
+  document.addEventListener('click',function(e){
+    var chip=e.target.closest('.chip'); if(chip){cat=chip.getAttribute('data-c');pintarChips();pintar();return}
+    if(e.target.closest('.cerrar')||e.target===$('modal')){cerrar();return}
+    var art=e.target.closest('[data-id]'); if(art) abrir(art.getAttribute('data-id'));
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') cerrar() });
+  $('buscar').addEventListener('input',function(e){ q=e.target.value; pintar() });
+
+  var redes=[['instagram','Instagram'],['tiktok','TikTok'],['youtube','YouTube']], h='';
+  redes.forEach(function(r){ if(cfg[r[0]]) h+='<a class="btn" target="_blank" rel="noopener" href="'+esc(cfg[r[0]])+'">'+r[1]+'</a>' });
+  if(cfg.whatsapp) h+='<a class="btn solido" target="_blank" rel="noopener" href="https://wa.me/'+esc(cfg.whatsapp.replace(/\D/g,''))+'">WhatsApp</a>';
+  $('redes').innerHTML=h;
+  $('anio').textContent=new Date().getFullYear();
+
+  pintarChips(); pintar();
+})();
+</script>
+</body>
+</html>
